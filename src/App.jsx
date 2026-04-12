@@ -1,18 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import SmartCard from './components/SmartCard';
 import SubscriptionsPanel from './components/SubscriptionsPanel';
 import WidgetGrid from './components/WidgetGrid';
 import Header from './components/Header';
-import { Home, PieChart, User, Cloud, Building2, Box, PenTool, LayoutTemplate, FileText } from 'lucide-react';
+import SubscriptionModal from './components/SubscriptionModal';
+import BNPLModal from './components/BNPLModal';
+import { Home, PieChart, User } from 'lucide-react';
 
-// Начальные данные подписок
 const INITIAL_SUBS = [
-  { id: 'moysklad', name: 'МойСклад', price: 2400, active: true, icon: Cloud },
-  { id: 'bitrix24', name: 'Битрикс24', price: 4500, active: true, icon: Building2 },
-  { id: '1c', name: '1С:Предприятие', price: 3800, active: false, icon: Box },
-  { id: 'adobe', name: 'Adobe Creative Cloud', price: 6200, active: true, icon: PenTool },
-  { id: 'tilda', name: 'Tilda Publishing', price: 1200, active: true, icon: LayoutTemplate },
-  { id: 'sbis', name: 'СБИС', price: 4900, active: false, icon: FileText },
+  { id: 'moysklad', name: 'МойСклад', price: 2400, active: true, iconName: 'cloud' },
+  { id: 'bitrix24', name: 'Битрикс24', price: 4500, active: true, iconName: 'building' },
+  { id: '1c', name: '1С:Предприятие', price: 3800, active: false, iconName: 'box' },
+  { id: 'adobe', name: 'Adobe Creative Cloud', price: 6200, active: true, iconName: 'pen' },
+  { id: 'tilda', name: 'Tilda Publishing', price: 1200, active: true, iconName: 'layout' },
+  { id: 'sbis', name: 'СБИС', price: 4900, active: false, iconName: 'file' },
 ];
 
 const NAV_ITEMS = [
@@ -21,13 +22,58 @@ const NAV_ITEMS = [
   { id: 'profile', icon: User, label: 'Профиль' },
 ];
 
-function App() {
-  // Состояния
-  const [activeTab, setActiveTab] = useState('home');
-  const [balance, setBalance] = useState(21000);
-  const [subscriptions, setSubscriptions] = useState(INITIAL_SUBS);
+const STORAGE_KEY = 'accord_subscriptions';
+const STORAGE_KEY_BALANCE = 'accord_balance';
 
-  // Вычисляемые значения
+function loadFromStorage(key, defaultValue) {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+function App() {
+  const [activeTab, setActiveTab] = useState('home');
+  const [balance, setBalance] = useState(() => loadFromStorage(STORAGE_KEY_BALANCE, 0));
+  const [subscriptions, setSubscriptions] = useState(() => loadFromStorage(STORAGE_KEY, INITIAL_SUBS));
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingSub, setEditingSub] = useState(null);
+  const [isBNPLModalOpen, setIsBNPLModalOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(subscriptions));
+  }, [subscriptions]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_BALANCE, JSON.stringify(balance));
+  }, [balance]);
+
+  // Shift+S триггер для демонстрации автодетекта
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.shiftKey && e.key === 'S') {
+        // Проверяем, не добавлена ли уже эта подписка
+        const yandexExists = subscriptions.some(sub => sub.id === 'yandex_plus');
+        if (!yandexExists) {
+          alert('Обнаружена транзакция: Сервисы Яндекса');
+          const newSubscription = {
+            id: 'yandex_plus',
+            name: 'Яндекс Плюс',
+            price: 490,
+            active: true,
+            iconName: 'music',
+          };
+          setSubscriptions(prev => [...prev, newSubscription]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [subscriptions]);
+
   const totalCommitments = useMemo(() => {
     return subscriptions
       .filter(sub => sub.active)
@@ -38,7 +84,6 @@ function App() {
     return Math.max(0, totalCommitments - balance);
   }, [totalCommitments, balance]);
 
-  // Функция переключения статуса подписки
   const toggleSubscription = (id) => {
     setSubscriptions(prevSubs => {
       return prevSubs.map(sub => {
@@ -50,21 +95,50 @@ function App() {
     });
   };
 
+  const handleAddClick = () => {
+    setEditingSub(null);
+    setModalOpen(true);
+  };
+
+  const handleEditClick = (sub) => {
+    setEditingSub(sub);
+    setModalOpen(true);
+  };
+
+  const handleSaveSubscription = (subData) => {
+    if (editingSub) {
+      setSubscriptions(prev =>
+        prev.map(sub => sub.id === editingSub.id ? subData : sub)
+      );
+    } else {
+      setSubscriptions(prev => [...prev, subData]);
+    }
+  };
+
+  const handleDeleteSubscription = (id) => {
+    setSubscriptions(prev => prev.filter(sub => sub.id !== id));
+  };
+
+  const handlePayLater = () => {
+    setIsBNPLModalOpen(true);
+  };
+
+  const handleBNPLConfirm = () => {
+    setBalance(prev => prev + shortfall);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900 antialiased">
-      {/* Контент */}
-      <div className="max-w-md mx-auto overflow-hidden">
+      <div className="max-w-md mx-auto">
         <Header />
         <SmartCard balance={balance} />
-        
-        {/* Блок с информацией о списании */}
-        <div className="px-6 py-3 mb-2">
+
+        <div className="px-6 py-2 mb-3">
           <p className="text-sm text-gray-500">
             К списанию 15 мая: <span className="font-medium text-gray-900">{totalCommitments.toLocaleString('ru-RU')} ₽</span>
           </p>
         </div>
 
-        {/* BNPL Alert при нехватке средств */}
         {shortfall > 0 && (
           <div className="mx-4 mb-6 p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
             <div className="flex items-center justify-between">
@@ -72,6 +146,7 @@ function App() {
                 Не хватает средств для списания
               </p>
               <button
+                onClick={handlePayLater}
                 className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
               >
                 Оплатить позже {shortfall.toLocaleString('ru-RU')} ₽
@@ -83,12 +158,12 @@ function App() {
         <SubscriptionsPanel
           subscriptions={subscriptions}
           onToggle={toggleSubscription}
-          totalCommitments={totalCommitments}
+          onEdit={handleEditClick}
+          onAdd={handleAddClick}
         />
         <WidgetGrid />
       </div>
 
-      {/* Нижняя навигация */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-200 px-6 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="max-w-md mx-auto flex justify-around items-center">
           {NAV_ITEMS.map((item) => {
@@ -118,6 +193,21 @@ function App() {
           })}
         </div>
       </nav>
+
+      <SubscriptionModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSaveSubscription}
+        onDelete={handleDeleteSubscription}
+        subscription={editingSub}
+      />
+
+      <BNPLModal
+        isOpen={isBNPLModalOpen}
+        onClose={() => setIsBNPLModalOpen(false)}
+        shortfall={shortfall}
+        onConfirm={handleBNPLConfirm}
+      />
     </div>
   );
 }
