@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Cloud, Building2, Box, PenTool, LayoutTemplate, FileText, CreditCard, Utensils, ShoppingBag, Car, Home, Smartphone, Gamepad2, Music, Film, Briefcase, Heart } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const ICONS = [
   { id: 'default', icon: CreditCard },
@@ -22,6 +23,7 @@ const ICONS = [
 ];
 
 const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) => {
+  const { t, getCurrency, language, convertToRub, convertFromRub } = useLanguage();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('default');
@@ -30,7 +32,9 @@ const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) 
   useEffect(() => {
     if (subscription) {
       setName(subscription.name);
-      setPrice(subscription.price.toString());
+      // Convert stored RUB price to display currency
+      const displayPrice = convertFromRub(subscription.price);
+      setPrice(displayPrice.toString());
       setSelectedIcon(subscription.iconName || 'default');
     } else {
       setName('');
@@ -38,15 +42,15 @@ const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) 
       setSelectedIcon('default');
     }
     setErrors({});
-  }, [subscription, isOpen]);
+  }, [subscription, isOpen, convertFromRub]);
 
   const validate = () => {
     const newErrors = {};
     if (!name.trim()) {
-      newErrors.name = 'Введите название подписки';
+      newErrors.name = t('modal.nameError');
     }
     if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
-      newErrors.price = 'Введите корректную цену';
+      newErrors.price = t('modal.priceError');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -56,10 +60,13 @@ const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) 
     e.preventDefault();
     if (!validate()) return;
     
+    // Convert displayed price to RUB before saving
+    const priceInRub = convertToRub(parseFloat(price));
+    
     onSave({
       id: subscription?.id || `sub_${Date.now()}`,
       name: name.trim(),
-      price: parseFloat(price),
+      price: priceInRub,
       active: subscription?.active ?? true,
       iconName: selectedIcon,
     });
@@ -84,7 +91,7 @@ const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) 
       <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden animate-slide-up">
         <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">
-            {subscription ? 'Редактировать подписку' : 'Новая подписка'}
+            {subscription ? t('modal.editSubscription') : t('modal.newSubscription')}
           </h2>
           <button
             onClick={onClose}
@@ -97,13 +104,13 @@ const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) 
         <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Название
+              {t('modal.name')}
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Например: Netflix"
+              placeholder={t('modal.namePlaceholder')}
               className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:bg-white transition-all ${
                 errors.name ? 'border-red-400' : 'border-transparent'
               }`}
@@ -115,7 +122,7 @@ const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) 
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Цена (₽/мес)
+              {t('modal.price')}
             </label>
             <div className="relative">
               <input
@@ -129,7 +136,9 @@ const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) 
                   errors.price ? 'border-red-400' : 'border-transparent'
                 }`}
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">₽</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                {language === 'en' ? '$' : '₽'}
+              </span>
             </div>
             {errors.price && (
               <p className="mt-1 text-sm text-red-500">{errors.price}</p>
@@ -138,7 +147,7 @@ const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) 
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Иконка
+              {t('modal.icon')}
             </label>
             <div className="grid grid-cols-9 gap-2">
               {ICONS.map((iconData) => {
@@ -167,7 +176,7 @@ const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) 
               type="submit"
               className="w-full px-4 py-3 bg-zinc-900 text-white font-medium rounded-xl hover:bg-zinc-800 transition-colors"
             >
-              {subscription ? 'Сохранить' : 'Добавить'}
+              {subscription ? t('modal.save') : t('modal.add')}
             </button>
             {subscription && (
               <button
@@ -175,7 +184,7 @@ const SubscriptionModal = ({ isOpen, onClose, onSave, onDelete, subscription }) 
                 onClick={handleDelete}
                 className="w-full text-red-500 font-medium hover:text-red-600 transition-colors py-2"
               >
-                Удалить подписку
+                {t('modal.delete')}
               </button>
             )}
           </div>

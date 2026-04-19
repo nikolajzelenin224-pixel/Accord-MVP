@@ -1,32 +1,35 @@
 import React from 'react';
 import { Card } from './ui/Card';
 import { Activity, TrendingDown, Calendar } from 'lucide-react';
-
-const WIDGETS = [
-  {
-    title: 'История',
-    description: 'Траты за 30 дней',
-    icon: Activity,
-    value: '12 400 ₽'
-  },
-  {
-    title: 'Экономия',
-    description: 'Анализ тарифов',
-    icon: TrendingDown,
-    value: '3 200 ₽'
-  },
-  {
-    title: 'Списания',
-    description: 'Ближайшие',
-    icon: Calendar,
-    value: 'через 3 дня'
-  }
-];
+import { useLanguage } from '../contexts/LanguageContext';
 
 const WidgetGrid = () => {
+  const { t, formatCurrency } = useLanguage();
+  
+  const WIDGETS = [
+    {
+      title: t('widgets.history'),
+      description: t('widgets.historyDesc'),
+      icon: Activity,
+      value: formatCurrency(12400)
+    },
+    {
+      title: t('widgets.savings'),
+      description: t('widgets.savingsDesc'),
+      icon: TrendingDown,
+      value: formatCurrency(3200)
+    },
+    {
+      title: t('widgets.charges'),
+      description: t('widgets.chargesDesc'),
+      icon: Calendar,
+      value: t('widgets.in3Days')
+    }
+  ];
+
   return (
     <div className="px-4 pb-8">
-      <h3 className="text-gray-900 font-semibold mb-4 px-2">Быстрые действия</h3>
+      <h3 className="text-gray-900 font-semibold mb-4 px-2">{t('widgets.title')}</h3>
       <div className="grid grid-cols-3 gap-3">
         {WIDGETS.map((widget, index) => {
           const Icon = widget.icon;

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const SmartCard = ({ balance }) => {
+  const { t, formatCurrency } = useLanguage();
   const [isFlipped, setIsFlipped] = useState(false);
   const [showCVC, setShowCVC] = useState(false);
   const [copiedCard, setCopiedCard] = useState(false);
@@ -72,9 +74,9 @@ const SmartCard = ({ balance }) => {
             </div>
 
             <div className="relative z-10">
-              <p className="text-zinc-400 text-xs uppercase tracking-widest mb-1">Доступный лимит</p>
-              <h2 className="text-4xl font-bold tabular-nums">{balance.toLocaleString('ru-RU')} ₽</h2>
-              <p className="text-xs text-zinc-400 mt-1">в этом месяце</p>
+              <p className="text-zinc-400 text-xs uppercase tracking-widest mb-1">{t('card.availableLimit')}</p>
+              <h2 className="text-4xl font-bold tabular-nums">{formatCurrency(balance)}</h2>
+              <p className="text-xs text-zinc-400 mt-1">{t('card.thisMonth')}</p>
             </div>
             
             <div className="flex justify-between items-end relative z-10">
@@ -110,7 +112,7 @@ const SmartCard = ({ balance }) => {
               <button
                 onClick={handleCopyCard}
                 className="text-gray-400 hover:text-white transition-colors cursor-pointer relative z-20"
-                aria-label="Копировать номер карты"
+                aria-label={t('card.copyCard')}
               >
                 {copiedCard ? (
                   <Check size={20} className="text-green-500" />
@@ -128,14 +130,14 @@ const SmartCard = ({ balance }) => {
                 <button
                   onClick={toggleCVC}
                   className="text-gray-400 hover:text-white transition-colors cursor-pointer relative z-20"
-                  aria-label={showCVC ? "Скрыть CVC" : "Показать CVC"}
+                  aria-label={showCVC ? t('card.hideCVC') : t('card.showCVC')}
                 >
                   {showCVC ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
                 <button
                   onClick={handleCopyCVC}
                   className="text-gray-400 hover:text-white transition-colors cursor-pointer relative z-20"
-                  aria-label="Копировать CVC"
+                  aria-label={t('card.copyCVC')}
                 >
                   {copiedCVC ? (
                     <Check size={20} className="text-green-500" />
@@ -147,14 +149,14 @@ const SmartCard = ({ balance }) => {
               
               {/* Правая часть: Текст про CVC */}
               <div className="text-[11px] text-gray-500 leading-tight flex-1">
-                Это CVC-код. Никому его не сообщайте.
+                {t('card.cvcWarning')}
               </div>
             </div>
 
             {/* Ряд 3: Срок действия (внизу) */}
             <div className="relative z-10 flex flex-col mt-auto pt-2">
-              <p className="text-white text-sm font-medium">До {expiryDate}</p>
-              <p className="text-[11px] text-gray-500 mt-1">При оплате можно указать любое имя</p>
+              <p className="text-white text-sm font-medium">{t('card.validUntil')} {expiryDate}</p>
+              <p className="text-[11px] text-gray-500 mt-1">{t('card.anyName')}</p>
             </div>
           </div>
         </div>

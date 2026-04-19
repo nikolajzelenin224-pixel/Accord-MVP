@@ -5,7 +5,9 @@ import WidgetGrid from './components/WidgetGrid';
 import Header from './components/Header';
 import SubscriptionModal from './components/SubscriptionModal';
 import BNPLModal from './components/BNPLModal';
+import ProfileTab from './components/ProfileTab';
 import { Home, PieChart, User } from 'lucide-react';
+import { useLanguage } from './contexts/LanguageContext';
 
 const INITIAL_SUBS = [
   { id: 'moysklad', name: 'МойСклад', price: 2400, active: true, iconName: 'cloud' },
@@ -16,11 +18,6 @@ const INITIAL_SUBS = [
   { id: 'sbis', name: 'СБИС', price: 4900, active: false, iconName: 'file' },
 ];
 
-const NAV_ITEMS = [
-  { id: 'home', icon: Home, label: 'Главная' },
-  { id: 'analytics', icon: PieChart, label: 'Аналитика' },
-  { id: 'profile', icon: User, label: 'Профиль' },
-];
 
 const STORAGE_KEY = 'accord_subscriptions';
 const STORAGE_KEY_BALANCE = 'accord_balance';
@@ -35,6 +32,7 @@ function loadFromStorage(key, defaultValue) {
 }
 
 function App() {
+  const { t, formatCurrency } = useLanguage();
   const [activeTab, setActiveTab] = useState('home');
   const [balance, setBalance] = useState(() => loadFromStorage(STORAGE_KEY_BALANCE, 0));
   const [subscriptions, setSubscriptions] = useState(() => loadFromStorage(STORAGE_KEY, INITIAL_SUBS));
@@ -50,6 +48,12 @@ function App() {
     localStorage.setItem(STORAGE_KEY_BALANCE, JSON.stringify(balance));
   }, [balance]);
 
+  const NAV_ITEMS = useMemo(() => [
+    { id: 'home', icon: Home, label: t('nav.home') },
+    { id: 'analytics', icon: PieChart, label: t('nav.analytics') },
+    { id: 'profile', icon: User, label: t('nav.profile') },
+  ], [t]);
+
   // Shift+S триггер для демонстрации автодетекта
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -57,7 +61,7 @@ function App() {
         // Проверяем, не добавлена ли уже эта подписка
         const yandexExists = subscriptions.some(sub => sub.id === 'yandex_plus');
         if (!yandexExists) {
-          alert('Обнаружена транзакция: Сервисы Яндекса');
+          alert(t('autoDetect.detected'));
           const newSubscription = {
             id: 'yandex_plus',
             name: 'Яндекс Плюс',
@@ -72,7 +76,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [subscriptions]);
+  }, [subscriptions, t]);
 
   const totalCommitments = useMemo(() => {
     return subscriptions
@@ -131,37 +135,51 @@ function App() {
     <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900 antialiased">
       <div className="max-w-md mx-auto">
         <Header />
-        <SmartCard balance={balance} />
+        
+        {activeTab === 'home' && (
+          <>
+            <SmartCard balance={balance} />
 
-        <div className="px-6 py-2 mb-3">
-          <p className="text-sm text-gray-500">
-            К списанию 15 мая: <span className="font-medium text-gray-900">{totalCommitments.toLocaleString('ru-RU')} ₽</span>
-          </p>
-        </div>
-
-        {shortfall > 0 && (
-          <div className="mx-4 mb-6 p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-zinc-600">
-                Не хватает средств для списания
+            <div className="px-6 py-2 mb-3">
+              <p className="text-sm text-gray-500">
+                {t('subscriptions.toCharge')} <span className="font-medium text-gray-900">{formatCurrency(totalCommitments)}</span>
               </p>
-              <button
-                onClick={handlePayLater}
-                className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
-              >
-                Оплатить позже {shortfall.toLocaleString('ru-RU')} ₽
-              </button>
             </div>
+
+            {shortfall > 0 && (
+              <div className="mx-4 mb-6 p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-zinc-600">
+                    {t('shortfall.notEnough')}
+                  </p>
+                  <button
+                    onClick={handlePayLater}
+                    className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
+                  >
+                    {t('shortfall.payLater')} {formatCurrency(shortfall)}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <SubscriptionsPanel
+              subscriptions={subscriptions}
+              onToggle={toggleSubscription}
+              onEdit={handleEditClick}
+              onAdd={handleAddClick}
+            />
+            <WidgetGrid />
+          </>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="px-4 py-8 text-center">
+            <PieChart className="mx-auto text-gray-400 mb-4" size={48} />
+            <p className="text-gray-500">{t('nav.analytics')}</p>
           </div>
         )}
 
-        <SubscriptionsPanel
-          subscriptions={subscriptions}
-          onToggle={toggleSubscription}
-          onEdit={handleEditClick}
-          onAdd={handleAddClick}
-        />
-        <WidgetGrid />
+        {activeTab === 'profile' && <ProfileTab />}
       </div>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-200 px-6 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">

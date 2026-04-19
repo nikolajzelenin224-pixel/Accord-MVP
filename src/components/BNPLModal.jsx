@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar, Clock } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
+  const { t, language, formatCurrency } = useLanguage();
   const [paymentOption, setPaymentOption] = useState('scheduled'); // 'scheduled' или 'custom'
   const [customDate, setCustomDate] = useState('');
 
@@ -59,12 +61,23 @@ const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
     const commission = Math.round(shortfall * 0.04 * (days / 30));
     const total = shortfall + commission;
 
-    return { days, commission, total };
-  }, [paymentOption, customDate, scheduledDate, shortfall]);
+    // Determine correct plural form for days
+    let daysText;
+    if (days === 1) {
+      daysText = t('bnpl.day');
+    } else if (days >= 2 && days <= 4) {
+      daysText = t('bnpl.days2');
+    } else {
+      daysText = t('bnpl.days');
+    }
+
+    return { days, commission, total, daysText };
+  }, [paymentOption, customDate, scheduledDate, shortfall, t]);
 
   // Форматирование даты для отображения
   const formatDate = (date) => {
-    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+    const locale = language === 'ru' ? 'ru-RU' : 'en-US';
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'long' });
   };
 
   const handleConfirm = () => {
@@ -92,7 +105,7 @@ const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
       <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden animate-slide-up">
         <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">
-            Оформление отсрочки
+            {t('bnpl.title')}
           </h2>
           <button
             onClick={onClose}
@@ -105,16 +118,16 @@ const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
         <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           {/* Сумма покрытия */}
           <div className="text-center py-4">
-            <p className="text-sm text-gray-500 mb-2">Сумма покрытия</p>
+            <p className="text-sm text-gray-500 mb-2">{t('bnpl.coverageAmount')}</p>
             <p className="text-4xl font-bold text-zinc-900">
-              {shortfall.toLocaleString('ru-RU')} ₽
+              {formatCurrency(shortfall)}
             </p>
           </div>
 
           {/* Выбор сценария возврата */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Срок возврата
+              {t('bnpl.returnPeriod')}
             </label>
             <div className="space-y-3">
               {/* Вариант А: До планового пополнения */}
@@ -138,10 +151,10 @@ const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-gray-900 mb-1">
-                      До планового пополнения
+                      {t('bnpl.scheduledPayment')}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {formatDate(scheduledDate)} (15 числа)
+                      {formatDate(scheduledDate)} {t('bnpl.on15th')}
                     </p>
                   </div>
                   <Calendar size={20} className="text-gray-400 mt-1" />
@@ -169,7 +182,7 @@ const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-gray-900 mb-1">
-                      Выбрать удобную дату
+                      {t('bnpl.customDate')}
                     </p>
                     {paymentOption === 'custom' && (
                       <input
@@ -191,34 +204,34 @@ const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
           {/* Блок детализации */}
           {calculation && (
             <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-              <h3 className="font-medium text-gray-900 mb-3">Детализация</h3>
+              <h3 className="font-medium text-gray-900 mb-3">{t('bnpl.details')}</h3>
               
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Сумма</span>
+                <span className="text-gray-600">{t('bnpl.amount')}</span>
                 <span className="text-gray-900 font-medium">
-                  {shortfall.toLocaleString('ru-RU')} ₽
+                  {formatCurrency(shortfall)}
                 </span>
               </div>
 
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Срок</span>
+                <span className="text-gray-600">{t('bnpl.period')}</span>
                 <span className="text-gray-900 font-medium">
-                  {calculation.days} {calculation.days === 1 ? 'день' : calculation.days < 5 ? 'дня' : 'дней'}
+                  {calculation.days} {calculation.daysText}
                 </span>
               </div>
 
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Комиссия (4% за 30 дней)</span>
+                <span className="text-gray-600">{t('bnpl.commission')}</span>
                 <span className="text-gray-900 font-medium">
-                  {calculation.commission.toLocaleString('ru-RU')} ₽
+                  {formatCurrency(calculation.commission)}
                 </span>
               </div>
 
               <div className="pt-3 border-t border-gray-200">
                 <div className="flex justify-between">
-                  <span className="font-semibold text-gray-900">Итого к списанию</span>
+                  <span className="font-semibold text-gray-900">{t('bnpl.totalCharge')}</span>
                   <span className="font-bold text-zinc-900 text-lg">
-                    {calculation.total.toLocaleString('ru-RU')} ₽
+                    {formatCurrency(calculation.total)}
                   </span>
                 </div>
               </div>
@@ -228,7 +241,7 @@ const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
           {/* Предупреждение если дата не выбрана */}
           {paymentOption === 'custom' && !customDate && (
             <div className="text-center text-sm text-gray-500 py-2">
-              Выберите дату возврата
+              {t('bnpl.selectDate')}
             </div>
           )}
 
@@ -242,11 +255,11 @@ const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
           >
-            Оформить отсрочку
+            {t('bnpl.confirm')}
           </button>
 
           <p className="text-xs text-center text-gray-400 leading-relaxed">
-            Средства будут зачислены на баланс. Списание произойдет автоматически в выбранную дату.
+            {t('bnpl.notice')}
           </p>
         </div>
       </div>

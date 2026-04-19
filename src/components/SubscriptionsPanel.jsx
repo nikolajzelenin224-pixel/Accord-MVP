@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from './ui/Card';
 import { Plus, Cloud, Building2, Box, PenTool, LayoutTemplate, FileText, CreditCard, Utensils, ShoppingBag, Car, Home, Smartphone, Gamepad2, Music, Film, Briefcase, Heart } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Маппинг строковых имен иконок на компоненты lucide-react
 const ICON_MAP = {
@@ -28,18 +29,20 @@ const getIconComponent = (iconName) => {
 };
 
 const SubscriptionsPanel = ({ subscriptions, onToggle, onEdit, onAdd }) => {
+  const { t, formatCurrency } = useLanguage();
+  
   return (
     <div className="px-4 mb-8">
       <div className="flex justify-between items-center mb-4 px-2">
-        <h3 className="text-gray-900 font-semibold text-lg">Ваши подписки</h3>
+        <h3 className="text-gray-900 font-semibold text-lg">{t('subscriptions.title')}</h3>
         <div className="flex items-center gap-3">
           <span className="text-xs text-gray-400">
-            {subscriptions.filter(s => s.active).length} активных
+            {subscriptions.filter(s => s.active).length} {t('subscriptions.active')}
           </span>
           <button
             onClick={onAdd}
             className="p-2 bg-zinc-900 text-white rounded-full hover:bg-zinc-800 transition-colors shadow-lg"
-            aria-label="Добавить подписку"
+            aria-label={t('subscriptions.add')}
           >
             <Plus size={18} />
           </button>
@@ -48,12 +51,12 @@ const SubscriptionsPanel = ({ subscriptions, onToggle, onEdit, onAdd }) => {
 
       {subscriptions.length === 0 ? (
         <Card className="p-8 text-center">
-          <p className="text-gray-400 mb-4">У вас пока нет подписок</p>
+          <p className="text-gray-400 mb-4">{t('subscriptions.noSubscriptions')}</p>
           <button
             onClick={onAdd}
             className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-800 transition-colors"
           >
-            Добавить первую подписку
+            {t('subscriptions.addFirst')}
           </button>
         </Card>
       ) : (
@@ -74,10 +77,10 @@ const SubscriptionsPanel = ({ subscriptions, onToggle, onEdit, onAdd }) => {
                       {sub.name}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {sub.price.toLocaleString('ru-RU')} ₽ / мес
+                      {formatCurrency(sub.price)} / {t('subscriptions.perMonth').split(' / ')[1]}
                     </p>
                     <p className={`text-[10px] mt-1 ${sub.active ? 'text-gray-400' : 'text-red-500'}`}>
-                      {sub.active ? 'Активна' : 'Списания запрещены'}
+                      {sub.active ? t('subscriptions.isActive') : t('subscriptions.paymentsBlocked')}
                     </p>
                   </div>
                 </div>
