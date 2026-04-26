@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar, Clock } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
+const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm, paymentDate = 15 }) => {
   const { t, language, formatCurrency } = useLanguage();
   const [paymentOption, setPaymentOption] = useState('scheduled'); // 'scheduled' или 'custom'
   const [customDate, setCustomDate] = useState('');
 
-  // Рассчитываем дату ближайшего 15-го числа следующего месяца
-  const getNext15th = () => {
+  // Рассчитываем дату на основе выбранного дня из App
+  const getScheduledDate = () => {
     const today = new Date();
     const currentDay = today.getDate();
     const currentMonth = today.getMonth();
@@ -17,8 +17,8 @@ const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
     let targetMonth = currentMonth;
     let targetYear = currentYear;
 
-    // Если сегодня 15-е или позже, берем 15-е следующего месяца
-    if (currentDay >= 15) {
+    // Если сегодня позже или равно выбранному дню, берем следующий месяц
+    if (currentDay >= paymentDate) {
       targetMonth += 1;
       if (targetMonth > 11) {
         targetMonth = 0;
@@ -26,10 +26,10 @@ const BNPLModal = ({ isOpen, onClose, shortfall, onConfirm }) => {
       }
     }
 
-    return new Date(targetYear, targetMonth, 15);
+    return new Date(targetYear, targetMonth, paymentDate);
   };
 
-  const scheduledDate = useMemo(() => getNext15th(), []);
+  const scheduledDate = useMemo(() => getScheduledDate(), [paymentDate]);
 
   // Минимальная дата для выбора (завтра)
   const minDate = useMemo(() => {

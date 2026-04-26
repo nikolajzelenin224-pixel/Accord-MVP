@@ -2,8 +2,9 @@ import React from 'react';
 import { Card } from './ui/Card';
 import { Plus, Cloud, Building2, Box, PenTool, LayoutTemplate, FileText, CreditCard, Utensils, ShoppingBag, Car, Home, Smartphone, Gamepad2, Music, Film, Briefcase, Heart } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { LOGO_LIBRARY } from '../constants/logos';
 
-// Маппинг строковых имен иконок на компоненты lucide-react
+// Маппинг строковых имен иконок на компоненты lucide-react (fallback)
 const ICON_MAP = {
   default: CreditCard,
   cloud: Cloud,
@@ -69,9 +70,22 @@ const SubscriptionsPanel = ({ subscriptions, onToggle, onEdit, onAdd }) => {
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center group-hover:bg-gray-100 transition-colors">
-                    {React.createElement(getIconComponent(sub.iconName), { size: 20, className: 'text-gray-500' })}
-                  </div>
+                  {sub.logoId && LOGO_LIBRARY[sub.logoId] ? (
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm border border-gray-100 flex items-center justify-center p-2 group-hover:shadow-md transition-all">
+                      <img
+                        src={LOGO_LIBRARY[sub.logoId]}
+                        alt={sub.name}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          e.target.parentElement.innerHTML = `<div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">${React.createElement(getIconComponent(sub.iconName), { size: 20, className: 'text-gray-500' })}</div>`;
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center group-hover:bg-gray-100 transition-colors">
+                      {React.createElement(getIconComponent(sub.iconName), { size: 20, className: 'text-gray-500' })}
+                    </div>
+                  )}
                   <div>
                     <p className="font-medium text-sm text-gray-900 group-hover:text-zinc-700 transition-colors">
                       {sub.name}

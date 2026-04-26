@@ -6,17 +6,12 @@ import Header from './components/Header';
 import SubscriptionModal from './components/SubscriptionModal';
 import BNPLModal from './components/BNPLModal';
 import ProfileTab from './components/ProfileTab';
+import AddSubscriptionFlow from './components/AddSubscriptionFlow';
+import TopUpModal from './components/TopUpModal';
 import { Home, PieChart, User } from 'lucide-react';
 import { useLanguage } from './contexts/LanguageContext';
 
-const INITIAL_SUBS = [
-  { id: 'moysklad', name: 'МойСклад', price: 2400, active: true, iconName: 'cloud' },
-  { id: 'bitrix24', name: 'Битрикс24', price: 4500, active: true, iconName: 'building' },
-  { id: '1c', name: '1С:Предприятие', price: 3800, active: false, iconName: 'box' },
-  { id: 'adobe', name: 'Adobe Creative Cloud', price: 6200, active: true, iconName: 'pen' },
-  { id: 'tilda', name: 'Tilda Publishing', price: 1200, active: true, iconName: 'layout' },
-  { id: 'sbis', name: 'СБИС', price: 4900, active: false, iconName: 'file' },
-];
+const INITIAL_SUBS = [];
 
 
 const STORAGE_KEY = 'accord_subscriptions';
@@ -35,10 +30,14 @@ function App() {
   const { t, formatCurrency } = useLanguage();
   const [activeTab, setActiveTab] = useState('home');
   const [balance, setBalance] = useState(() => loadFromStorage(STORAGE_KEY_BALANCE, 0));
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [subscriptions, setSubscriptions] = useState(() => loadFromStorage(STORAGE_KEY, INITIAL_SUBS));
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSub, setEditingSub] = useState(null);
   const [isBNPLModalOpen, setIsBNPLModalOpen] = useState(false);
+  const [isAddFlowOpen, setIsAddFlowOpen] = useState(false);
+  const [paymentDate, setPaymentDate] = useState(null); // День месяца для списания (null = не выбрана)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(subscriptions));
@@ -100,6 +99,10 @@ function App() {
   };
 
   const handleAddClick = () => {
+    setIsAddFlowOpen(true);
+  };
+
+  const handleAddClickOld = () => {
     setEditingSub(null);
     setModalOpen(true);
   };
@@ -131,6 +134,24 @@ function App() {
     setBalance(prev => prev + shortfall);
   };
 
+  const handleFlowComplete = (newSubscriptions) => {
+    setSubscriptions(prev => [...prev, ...newSubscriptions]);
+    setIsAddFlowOpen(false);
+  };
+
+  const handleTopUp = () => {
+    setIsTopUpModalOpen(true);
+  };
+
+  const handleTopUpComplete = (amount) => {
+    setBalance(prev => prev + amount);
+    setIsTopUpModalOpen(false);
+  };
+
+  const handleAutoPaymentDateSet = (day) => {
+    setPaymentDate(day);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900 antialiased">
       <div className="max-w-md mx-auto">
@@ -140,10 +161,99 @@ function App() {
           <>
             <SmartCard balance={balance} />
 
-            <div className="px-6 py-2 mb-3">
-              <p className="text-sm text-gray-500">
-                {t('subscriptions.toCharge')} <span className="font-medium text-gray-900">{formatCurrency(totalCommitments)}</span>
-              </p>
+            {/* Top Up Button - compact and styled to match card */}
+            <div className="px-4 pb-4 flex justify-center">
+              <button
+                onClick={handleTopUp}
+                className="px-8 py-2.5 bg-gradient-to-br from-zinc-900 to-zinc-800 text-white rounded-xl font-medium hover:from-zinc-800 hover:to-zinc-700 transition-all shadow-md hover:shadow-lg text-sm"
+              >
+                Пополнить
+              </button>
+            </div>
+
+            {/* Payment Date Selector - clickable */}
+            <div className="px-4 pb-4">
+              <button
+                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                className="w-full p-4 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-white hover:to-gray-50 border border-gray-200 rounded-2xl transition-all hover:shadow-md"
+              >
+                {paymentDate === null ? (
+                  <div className="text-sm text-gray-600 text-center">
+                    Выберите дату оплаты
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">
+                      К списанию {paymentDate} {(() => {
+                        const today = new Date();
+                        const currentDay = today.getDate();
+                        const targetMonth = paymentDate < currentDay ? today.getMonth() + 1 : today.getMonth();
+                        return new Date(today.getFullYear(), targetMonth).toLocaleString('ru', { month: 'long' });
+                      })()}:
+                    </span>
+                    <span className="font-semibold text-gray-900">{formatCurrency(totalCommitments)}</span>
+                  </div>
+                )}
+              </button>
+              
+              {/* Dynamic Date Picker Dropdown */}
+              {isDatePickerOpen && (
+                <div className="mt-2 p-4 bg-white border border-gray-200 rounded-2xl shadow-lg">
+                  <p className="text-sm font-medium text-gray-700 mb-3">Выберите день списания</p>
+                  {(() => {
+                    const today = new Date();
+                    const currentDay = today.getDate();
+                    const currentMonth = today.getMonth();
+                    const currentYear = today.getFullYear();
+                    
+                    // Дни текущего месяца (от сегодня до конца месяца)
+                    const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+                    const currentMonthDays = [];
+                    for (let day = currentDay; day <= daysInCurrentMonth; day++) {
+                      currentMonthDays.push({
+                        day,
+                        month: currentMonth,
+                        monthName: new Date(currentYear, currentMonth).toLocaleString('ru', { month: 'short' })
+                      });
+                    }
+                    
+                    // Дни следующего месяца (с 1 до текущего дня - 1)
+                    const nextMonthDays = [];
+                    for (let day = 1; day < currentDay; day++) {
+                      nextMonthDays.push({
+                        day,
+                        month: currentMonth + 1,
+                        monthName: new Date(currentYear, currentMonth + 1).toLocaleString('ru', { month: 'short' })
+                      });
+                    }
+                    
+                    const allDays = [...currentMonthDays, ...nextMonthDays];
+                    
+                    return (
+                      <div className="grid grid-cols-7 gap-2 max-h-64 overflow-y-auto">
+                        {allDays.map(({ day, month, monthName }) => (
+                          <button
+                            key={`${month}-${day}`}
+                            onClick={() => {
+                              setPaymentDate(day);
+                              setIsDatePickerOpen(false);
+                            }}
+                            className={`p-2 rounded-lg text-xs font-medium transition-all ${
+                              paymentDate === day
+                                ? 'bg-gray-900 text-white shadow-md'
+                                : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                            }`}
+                            title={`${day} ${monthName}`}
+                          >
+                            <div>{day}</div>
+                            <div className="text-[10px] opacity-60">{monthName}</div>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             {shortfall > 0 && (
@@ -168,7 +278,7 @@ function App() {
               onEdit={handleEditClick}
               onAdd={handleAddClick}
             />
-            <WidgetGrid />
+            {/* WidgetGrid скрыт */}
           </>
         )}
 
@@ -225,6 +335,21 @@ function App() {
         onClose={() => setIsBNPLModalOpen(false)}
         shortfall={shortfall}
         onConfirm={handleBNPLConfirm}
+        paymentDate={paymentDate}
+      />
+
+      <AddSubscriptionFlow
+        isOpen={isAddFlowOpen}
+        onClose={() => setIsAddFlowOpen(false)}
+        onComplete={handleFlowComplete}
+      />
+
+      <TopUpModal
+        isOpen={isTopUpModalOpen}
+        onClose={() => setIsTopUpModalOpen(false)}
+        onTopUpComplete={handleTopUpComplete}
+        recommendedAmount={totalCommitments}
+        onAutoPaymentDateSet={handleAutoPaymentDateSet}
       />
     </div>
   );

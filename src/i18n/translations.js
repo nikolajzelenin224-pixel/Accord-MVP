@@ -101,6 +101,43 @@ export const translations = {
     autoDetect: {
       detected: 'Обнаружена транзакция: Сервисы Яндекса',
     },
+    // Add Subscription Flow
+    addFlow: {
+      // Method selection
+      methodTitle: 'Как добавить подписку?',
+      autoSync: 'Синхронизировать данные банка',
+      autoSyncDesc: 'Автоматический поиск подписок',
+      manualCard: 'Выпустить карту под сервис',
+      manualCardDesc: 'Создать виртуальную карту',
+      
+      // Bank sync
+      connecting: 'Установка защищенного соединения с',
+      analyzing: 'Анализ транзакций за последние 12 месяцев...',
+      processing: 'Обработка данных...',
+      secureConnection: 'Установка защищенного соединения...',
+      scanningTransactions: 'Сканирование транзакций...',
+      recognizingSubscriptions: 'Распознавание подписок...',
+      syncWithSberBusiness: 'Синхронизация с API СберБизнес...',
+      
+      // Results
+      foundSubscriptions: 'Найдено подписок',
+      weFoundSubscriptions: 'Мы нашли следующие подписки!',
+      foundCount: 'Найдено',
+      addAll: 'Добавить всё',
+      addSelected: 'Добавить выбранные',
+      selectBank: 'Выберите банк',
+      
+      // Manual flow
+      searchService: 'Поиск сервиса',
+      popularServices: 'Популярные сервисы',
+      cardIssued: 'Карта выпущена',
+      monthlyLimit: 'Месячный лимит',
+      addToSubscriptions: 'Добавить в подписки',
+      
+      // Common
+      back: 'Назад',
+      close: 'Закрыть',
+    },
   },
   en: {
     // Navigation
@@ -203,6 +240,43 @@ export const translations = {
     // Auto-detect
     autoDetect: {
       detected: 'Transaction detected: Yandex Services',
+    },
+    // Add Subscription Flow
+    addFlow: {
+      // Method selection
+      methodTitle: 'How to add subscription?',
+      autoSync: 'Sync bank data',
+      autoSyncDesc: 'Automatic subscription search',
+      manualCard: 'Issue card for service',
+      manualCardDesc: 'Create virtual card',
+      
+      // Bank sync
+      connecting: 'Establishing secure connection with',
+      analyzing: 'Analyzing transactions for the last 12 months...',
+      processing: 'Processing data...',
+      secureConnection: 'Establishing secure connection...',
+      scanningTransactions: 'Scanning transactions...',
+      recognizingSubscriptions: 'Recognizing subscriptions...',
+      syncWithSberBusiness: 'Syncing with SberBusiness API...',
+      
+      // Results
+      foundSubscriptions: 'Found subscriptions',
+      weFoundSubscriptions: 'We found the following subscriptions!',
+      foundCount: 'Found',
+      addAll: 'Add all',
+      addSelected: 'Add selected',
+      selectBank: 'Select bank',
+      
+      // Manual flow
+      searchService: 'Search service',
+      popularServices: 'Popular services',
+      cardIssued: 'Card issued',
+      monthlyLimit: 'Monthly limit',
+      addToSubscriptions: 'Add to subscriptions',
+      
+      // Common
+      back: 'Back',
+      close: 'Close',
     },
   },
 };
